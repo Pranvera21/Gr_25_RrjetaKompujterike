@@ -1,10 +1,12 @@
 const net = require('net');
+const fs = require('fs');
 const HOST = '127.0.0.1';   
 const PORT = 8084;   
-const MAX_CLIENTS = 3;         // Maksimumi i klientëve aktivë
-const activeClients = new Set(); // Set për klientët aktivë
-
+const MAX_CLIENTS = 3;         
+const activeClients = new Set(); 
 const clientsWithRequests = new Set();  
+
+const messages = [];
 
 
 const server = net.createServer((socket) => {
@@ -24,6 +26,9 @@ const server = net.createServer((socket) => {
     socket.on("data", (data) => {
         const message = data.toString().trim();
         console.log(`Mesazh nga ${clientAddress}: ${message}`);
+
+        messages.push({ client: clientAddress, message: message, timestamp: new Date() });
+        fs.appendFileSync('server_messages.txt', `[${new Date().toLocaleString()}] ${clientAddress}: ${message}\n`);
 
 
         clientsWithRequests.add(clientAddress);
