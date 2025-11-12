@@ -1,15 +1,24 @@
-import net from "net";
-import { SERVER_IP, SERVER_PORT } from "./config.js";
+const net = require('net');
+
+const HOST = '127.0.0.1';
+const PORT = 8084;
 
 const client = new net.Socket();
 
-client.connect(SERVER_PORT, SERVER_IP, () => {
-  console.log("Connected to server");
-  client.write("/list");
+client.connect(PORT, HOST, () => {
+    console.log(' U lidhët me serverin me sukses!');
+    client.write('Përshëndetje nga klienti!');
 });
 
-client.on("data", data => {
-  console.log("Server:", data.toString());
+client.on('data', (data) => {
+    console.log(' Mesazh nga serveri:', data.toString());
 });
 
-client.on("close", () => console.log("Connection closed"));
+client.on('close', () => {
+    console.log(' Lidhja me serverin u mbyll.');
+});
+
+
+client.on('error', (err) => {
+    console.error(' Gabim:', err.message);
+});
