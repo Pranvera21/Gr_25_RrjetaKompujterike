@@ -34,7 +34,5 @@ const knownClients = [
 
 
 
- * Gets all known clients
- * @returns {array} - Array of all known clients
- */
+
 function getAllClients() {
