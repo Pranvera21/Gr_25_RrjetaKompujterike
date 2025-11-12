@@ -1,8 +1,19 @@
 const net = require('net');
-
+const readline = require('readline');
 const HOST = '127.0.0.1';
 const PORT = 8084;
+const rlRole = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
+rlRole.question("Zgjidhni rolin tuaj (super/admin): ", (roleInput) => {
+    const role = roleInput.trim().toLowerCase();
+
+    if (!["super", "admin"].includes(role)) {
+        console.log("Roli i pavlefshëm. Vetëm 'super' ose 'admin' lejohet.");
+        process.exit();
+    }
 const client = new net.Socket();
 
 client.connect(PORT, HOST, () => {
@@ -21,4 +32,28 @@ client.on('close', () => {
 
 client.on('error', (err) => {
     console.error(' Gabim:', err.message);
+});
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
+rl.on("line", (input) => {
+    if (role === "super") {
+   
+        client.write(input);
+    } 
+    else if (role === "admin") {
+     
+        const allowed = ["/list", "/read", "/upload", "/download", "/delete", "/search"];
+        const cmd = input.split(" ")[0];
+        if (allowed.includes(cmd)) {
+            client.write(input);
+        } else {
+            console.log(" Komandë e ndaluar për admin. Lejohet vetëm:", allowed.join(", "));
+        }
+    }
+});
+
+rlRole.close();
 });
