@@ -23,6 +23,12 @@ const server = net.createServer((socket) => {
     console.log(`Klienti i ri u lidh: ${clientAddress}`);
     socket.write("Je lidhur me serverin!\n");
 
+    socket.role = "super";
+    socket.write("Roli yt aktual: " + socket.role + "\n");
+
+    socket.role = "admin";
+    socket.write("Roli yt aktual: " + socket.role + "\n");
+
     socket.on("data", (data) => {
         const message = data.toString().trim();
         console.log(`Mesazh nga ${clientAddress}: ${message}`);

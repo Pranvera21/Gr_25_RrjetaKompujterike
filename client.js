@@ -1,5 +1,6 @@
-import net from 'net';
-import readline from 'readline';
+const net = require('net');
+const readline = require('readline');
+
 
 const HOST = '127.0.0.1';
 const PORT = 8084;
@@ -15,11 +16,15 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin): ", (roleInput) => {
         console.log("Roli i pavlefshëm. Vetëm 'super' ose 'admin' lejohet.");
         process.exit();
     }
+    let clientRole = role;
 const client = new net.Socket();
 
 client.connect(PORT, HOST, () => {
     console.log(' U lidhët me serverin me sukses!');
+    client.write(`/role ${clientRole}`);
     client.write('Përshëndetje nga klienti!');
+    
+
 });
 
 client.on('data', (data) => {
