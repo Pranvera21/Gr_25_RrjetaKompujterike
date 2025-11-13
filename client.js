@@ -1,5 +1,6 @@
-const net = require('net');
-const readline = require('readline');
+import net from 'net';
+import readline from 'readline';
+
 const HOST = '127.0.0.1';
 const PORT = 8084;
 const rlRole = readline.createInterface({
@@ -45,7 +46,7 @@ rl.on("line", (input) => {
     } 
     else if (role === "admin") {
      
-        const allowed = ["/list", "/read", "/upload", "/download", "/delete", "/search"];
+        const allowed = ["/list", "/read", "/upload", "/download", "/delete", "/search","/info"];
         const cmd = input.split(" ")[0];
         if (allowed.includes(cmd)) {
             client.write(input);
