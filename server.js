@@ -51,6 +51,14 @@ const server = net.createServer((socket) => {
             return;
         }
 
+        const restrictedCommands = ["/upload", "/delete", "/download", "/execute"];
+        const cmd = message.split(" ")[0];
+
+    if (restrictedCommands.includes(cmd) && socket.role !== "super") {
+        socket.write(" Nuk ke leje për këtë komandë!\n");
+        return;
+    }
+
         messages.push({ client: clientAddress, message: message, timestamp: new Date() });
         fs.appendFileSync('server_messages.txt', `[${new Date().toLocaleString()}] ${clientAddress}: ${message}\n`);
 
