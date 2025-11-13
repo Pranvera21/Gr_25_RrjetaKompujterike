@@ -36,6 +36,16 @@ const server = net.createServer((socket) => {
         if (message.startsWith("/role")) {
             const parts = message.split(" ");
             const newRole = parts[1];
+
+            if (!newRole) {
+                socket.write("Përdorimi: /role admin ose /role super\n");
+                return;
+            }
+
+            if (!["admin", "super"].includes(newRole)) {
+                socket.write("Rol i pavlefshëm! Lejohen vetëm: admin, super\n");
+                return;
+            }
             socket.role = newRole;
             socket.write("Roli u ndryshua në: " + socket.role + "\n");
             return;
