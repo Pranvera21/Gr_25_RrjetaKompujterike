@@ -11,11 +11,6 @@ const rlRole = readline.createInterface({
 
 rlRole.question("Zgjidhni rolin tuaj (super/admin): ", (roleInput) => {
     const role = roleInput.trim().toLowerCase();
-
-    //if (!["super", "admin"].includes(role)) {
-       // console.log("Roli i pavlefshëm. Vetëm 'super' ose 'admin' lejohet.");
-        //process.exit();
-    //}
     let clientRole = role;
     rlRole.close();
 const client = new net.Socket();
@@ -61,5 +56,4 @@ rl.on("line", (input) => {
     }
 });
 
-//rlRole.close();
 });
