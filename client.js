@@ -12,11 +12,12 @@ const rlRole = readline.createInterface({
 rlRole.question("Zgjidhni rolin tuaj (super/admin): ", (roleInput) => {
     const role = roleInput.trim().toLowerCase();
 
-    if (!["super", "admin"].includes(role)) {
-        console.log("Roli i pavlefshëm. Vetëm 'super' ose 'admin' lejohet.");
-        process.exit();
-    }
+    //if (!["super", "admin"].includes(role)) {
+       // console.log("Roli i pavlefshëm. Vetëm 'super' ose 'admin' lejohet.");
+        //process.exit();
+    //}
     let clientRole = role;
+    rlRole.close();
 const client = new net.Socket();
 
 client.connect(PORT, HOST, () => {
@@ -40,13 +41,12 @@ client.on('error', (err) => {
     console.error(' Gabim:', err.message);
 });
 const rl = readline.createInterface({
-    input: process.stdin,
+   input: process.stdin,
     output: process.stdout
 });
 
 rl.on("line", (input) => {
     if (role === "super") {
-   
         client.write(input);
     } 
     else if (role === "admin") {
@@ -61,5 +61,5 @@ rl.on("line", (input) => {
     }
 });
 
-rlRole.close();
+//rlRole.close();
 });

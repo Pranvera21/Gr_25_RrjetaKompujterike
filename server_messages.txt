@@ -1,1 +1,12 @@
 [11/13/2025, 7:17:34 PM] 127.0.0.1:59359: Përshëndetje nga klienti!
+[11/13/2025, 8:09:11 PM] 127.0.0.1:65411: Përshëndetje nga klienti!
+[11/13/2025, 8:13:09 PM] 127.0.0.1:61694: Përshëndetje nga klienti!
+[11/13/2025, 8:24:18 PM] 127.0.0.1:53225: Përshëndetje nga klienti!
+[11/13/2025, 8:30:19 PM] 127.0.0.1:49867: Përshëndetje nga klienti!
+[11/13/2025, 8:34:23 PM] 127.0.0.1:52825: Përshëndetje nga klienti!
+[11/13/2025, 8:36:03 PM] 127.0.0.1:62032: Përshëndetje nga klienti!
+[11/13/2025, 8:41:35 PM] 127.0.0.1:49613: Përshëndetje nga klienti!
+[11/13/2025, 8:55:14 PM] 127.0.0.1:56008: Përshëndetje nga klienti!
+[11/13/2025, 8:58:08 PM] 127.0.0.1:56071: Përshëndetje nga klienti!
+[11/13/2025, 8:59:05 PM] 127.0.0.1:56071: /list
+[11/13/2025, 9:01:28 PM] 127.0.0.1:56071: /read
