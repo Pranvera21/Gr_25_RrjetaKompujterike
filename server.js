@@ -33,6 +33,14 @@ const server = net.createServer((socket) => {
         const message = data.toString().trim();
         console.log(`Mesazh nga ${clientAddress}: ${message}`);
 
+        if (message.startsWith("/role")) {
+            const parts = message.split(" ");
+            const newRole = parts[1];
+            socket.role = newRole;
+            socket.write("Roli u ndryshua në: " + socket.role + "\n");
+            return;
+        }
+
         messages.push({ client: clientAddress, message: message, timestamp: new Date() });
         fs.appendFileSync('server_messages.txt', `[${new Date().toLocaleString()}] ${clientAddress}: ${message}\n`);
 
