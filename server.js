@@ -1,7 +1,7 @@
 const net = require('net');
 const fs = require('fs');
-const HOST = '127.0.0.1';   
-const PORT = 8084;   
+const { HOST, PORT } = require('./server/config');
+
 const MAX_CLIENTS = 3;         
 const activeClients = new Set(); 
 const clientsWithRequests = new Set();  
@@ -92,5 +92,5 @@ const server = net.createServer((socket) => {
     });
 });
 server.listen ( PORT, HOST, () => {
-  console.log(`✅ Serveri po dëgjon në ${HOST}:${PORT}`);
+  console.log(`Serveri po dëgjon në ${HOST}:${PORT}`);
 });
