@@ -22,6 +22,23 @@ const server = net.createServer((socket) => {
     activeClients.add(socket);
     console.log(`Klienti i ri u lidh: ${clientAddress}`);
     socket.write("Je lidhur me serverin!\n");
+    const TIMEOUT_MS = 30000; 
+    const clientTimers = new Map();
+
+    function resetTimer() {
+    if (clientTimers.has(socket)) clearTimeout(clientTimers.get(socket));
+
+    const timeout = setTimeout(() => {
+        socket.write("Koha e pritjes ka skaduar. Lidhja po mbyllet.\n");
+        socket.end();
+        console.log(`Klienti u mbyll për shkak të paaktivitetit: ${clientAddress}`);
+    }, TIMEOUT_MS);
+
+    clientTimers.set(socket, timeout);
+}
+
+resetTimer();
+
 
     socket.role = "super";
     socket.write("Roli yt aktual: " + socket.role + "\n");
@@ -75,17 +92,19 @@ const server = net.createServer((socket) => {
             .map(s => s.remoteAddress + ":" + s.remotePort)
             .filter(addr => !clientsWithRequests.has(addr));
         console.log(`Klientët që nuk kanë bërë ende request: ${clientsWithoutRequests.join(", ")}`);
-
+        resetTimer(); 
 
     });
 
     socket.on("end", () => {
+        if (clientTimers.has(socket)) clearTimeout(clientTimers.get(socket));
         activeClients.delete(socket);
            clientsWithRequests.delete(clientAddress); 
         console.log(`Klienti u shkëput: ${clientAddress}`);
     });
 
     socket.on("error", (err) => {
+        if (clientTimers.has(socket)) clearTimeout(clientTimers.get(socket)); 
         activeClients.delete(socket);
          clientsWithRequests.delete(clientAddress); 
         console.log(`Gabim me klientin ${clientAddress}: ${err.message}`);
