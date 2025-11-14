@@ -8,9 +8,30 @@ const clientsWithRequests = new Set();
 
 const messages = [];
 
+const clientDataStore = new Map(); 
 
 const server = net.createServer((socket) => {
     const clientAddress = socket.remoteAddress + ":" + socket.remotePort;
+
+
+    if (clientDataStore.has(clientAddress)) {
+        const data = clientDataStore.get(clientAddress);
+        socket.role = data.role;
+        socket.write(`🟩 Mirësevini përsëri! Roli yt është rikuperuar: ${socket.role}\n`);
+        console.log(`Klienti u rikuperua: ${clientAddress}`);
+    } else {
+        socket.role = "super"; 
+        socket.write("🟩 Roli yt aktual: " + socket.role + "\n");
+
+        clientDataStore.set(clientAddress, {
+            role: socket.role,
+            lastMessages: [],
+            messageCount: 0,
+            bytesSent: 0,
+            bytesReceived: 0,
+            reconnected: true
+        });
+    }
 
     if (activeClients.size >= MAX_CLIENTS) {
         socket.write("Serveri ka arritur numrin maksimal të klientëve. Provo më vonë.\n");
@@ -40,15 +61,18 @@ const server = net.createServer((socket) => {
 resetTimer();
 
 
-    socket.role = "super";
-    socket.write("Roli yt aktual: " + socket.role + "\n");
-
-    socket.role = "admin";
-    socket.write("Roli yt aktual: " + socket.role + "\n");
+  
 
     socket.on("data", (data) => {
         const message = data.toString().trim();
         console.log(`Mesazh nga ${clientAddress}: ${message}`);
+
+
+          const clientData = clientDataStore.get(clientAddress);
+
+        clientData.messageCount += 1;
+        clientData.bytesReceived += Buffer.byteLength(data);
+
 
         if (message.startsWith("/role")) {
             const parts = message.split(" ");
@@ -64,6 +88,8 @@ resetTimer();
                 return;
             }
             socket.role = newRole;
+            clientData.role = newRole;   
+            clientDataStore.set(clientAddress, clientData);
             socket.write("Roli u ndryshua në: " + socket.role + "\n");
             return;
         }
@@ -77,12 +103,18 @@ resetTimer();
     }
 
         messages.push({ client: clientAddress, message: message, timestamp: new Date() });
+
+         clientDataStore.set(clientAddress, clientData);
+
         fs.appendFileSync('server_messages.txt', `[${new Date().toLocaleString()}] ${clientAddress}: ${message}\n`);
 
 
         clientsWithRequests.add(clientAddress);
+        
 
-        socket.write(`Serveri mori mesazhin: ${message}\n`);
+       const response = `Serveri mori mesazhin: ${message}\n`;
+        socket.write(response);
+        clientData.bytesSent += Buffer.byteLength(response);
         
      
         console.log(`Klientët që kanë bërë të paktën një request: ${Array.from(clientsWithRequests).join(", ")}`);
@@ -92,6 +124,22 @@ resetTimer();
             .map(s => s.remoteAddress + ":" + s.remotePort)
             .filter(addr => !clientsWithRequests.has(addr));
         console.log(`Klientët që nuk kanë bërë ende request: ${clientsWithoutRequests.join(", ")}`);
+
+        if (message === "/stats") {
+            let statsMessage = "\n--- STATISTIKAT E SERVERIT ---\n";
+            statsMessage += `Lidhje aktive: ${activeClients.size}\n`;
+            for (const [addr, data] of clientDataStore.entries()) {
+                statsMessage += `Klienti: ${addr}\n`;
+                statsMessage += `  Role: ${data.role}\n`;
+                statsMessage += `  Numri i mesazheve: ${data.messageCount}\n`;
+                statsMessage += `  Bytes të dërguara: ${data.bytesSent}\n`;
+                statsMessage += `  Bytes të pranuara: ${data.bytesReceived}\n`;
+            }
+            console.log(statsMessage);
+            fs.appendFileSync('server_stats.txt', statsMessage + '\n');
+            socket.write("📊 Statistikat u shfaqën në server log.\n");
+        }
+
         resetTimer(); 
 
     });
