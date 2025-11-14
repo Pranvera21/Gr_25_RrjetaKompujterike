@@ -102,6 +102,38 @@ resetTimer();
         return;
     }
 
+     if (message.startsWith("/ls") && socket.role === "super") {
+            const parts = message.split(" ");
+            const dir = parts[1] || "."; 
+            fs.readdir(dir, (err, files) => {
+                if (err) {
+                    socket.write(`Gabim gjatë leximit të folderit: ${err.message}\n`);
+                } else {
+                    socket.write(`Përmbajtja e folderit '${dir}':\n` + files.join("\n") + "\n");
+                }
+            });
+            return;
+        }
+
+        if (message.startsWith("/cat") && socket.role === "super") {
+            const parts = message.split(" ");
+            const file = parts[1];
+            if (!file) {
+                socket.write("Përdorimi: /cat <filename>\n");
+                return;
+            }
+            fs.readFile(file, "utf8", (err, data) => {
+                if (err) {
+                    socket.write(`Gabim gjatë leximin e file-it: ${err.message}\n`);
+                } else {
+                    socket.write(`Përmbajtja e file-it '${file}':\n${data}\n`);
+                }
+            });
+            return;
+        }
+
+
+
         messages.push({ client: clientAddress, message: message, timestamp: new Date() });
 
          clientDataStore.set(clientAddress, clientData);
@@ -137,7 +169,7 @@ resetTimer();
             }
             console.log(statsMessage);
             fs.appendFileSync('server_stats.txt', statsMessage + '\n');
-            socket.write("📊 Statistikat u shfaqën në server log.\n");
+            socket.write(" Statistikat u shfaqën në server log.\n");
         }
 
         resetTimer(); 
