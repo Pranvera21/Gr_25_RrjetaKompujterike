@@ -43,7 +43,7 @@ const server = net.createServer((socket) => {
     activeClients.add(socket);
     console.log(`Klienti i ri u lidh: ${clientAddress}`);
     socket.write("Je lidhur me serverin!\n");
-    const TIMEOUT_MS = 30000; 
+    const TIMEOUT_MS = 300000; 
     const clientTimers = new Map();
 
     function resetTimer() {
@@ -93,8 +93,9 @@ resetTimer();
             socket.write("Roli u ndryshua në: " + socket.role + "\n");
             return;
         }
+//const restrictedCommands = ["/upload", "/delete", "/download", "/execute"];
 
-        const restrictedCommands = ["/upload", "/delete", "/download", "/execute"];
+        const restrictedCommands = ["/execute"];
         const cmd = message.split(" ")[0];
 
     if (restrictedCommands.includes(cmd) && socket.role !== "super") {
@@ -132,6 +133,93 @@ resetTimer();
             return;
         }
 
+if (message === "/list") {
+    fs.readdir(".", (err, files) => {
+        if (err) socket.write("Gabim gjatë listimit të direktorive.\n");
+        else socket.write("📂 File-at në server:\n" + files.join("\n") + "\n");
+    });
+    return;
+}
+if (message.startsWith("/read")) {
+    const file = message.split(" ")[1];
+    if (!file) return socket.write("Përdorimi: /read <filename>\n");
+
+    fs.readFile(file, "utf8", (err, data) => {
+        if (err) socket.write("Gabim gjatë leximit të file-it.\n");
+        else socket.write(`📄 Përmbajtja e ${file}:\n${data}\n`);
+    });
+    return;
+}
+if (message.startsWith("/upload")) {
+    const parts = message.split(" ");
+    const filename = parts[1];
+    const base64data = parts.slice(2).join(" ");
+
+    if (!filename || !base64data)
+        return socket.write("Përdorimi: /upload <filename> <data>\n");
+
+    const content = Buffer.from(base64data, "base64").toString("utf8");
+
+    fs.writeFile(filename, content, (err) => {
+        if (err) socket.write("Gabim gjatë ruajtjes së file-it.\n");
+        else socket.write(`📤 File '${filename}' u ngarkua me sukses!\n`);
+    });
+    return;
+}
+
+if (message.startsWith("/download")) {
+    const file = message.split(" ")[1];
+    if (!file) return socket.write("Përdorimi: /download <filename>\n");
+
+    fs.readFile(file, (err, data) => {
+        if (err) return socket.write("Gabim gjatë leximit të file-it.\n");
+
+        const base64Content = data.toString("base64");
+        socket.write(`/file ${file} ${base64Content}\n`);
+    });
+    return;
+}
+
+if (message.startsWith("/delete")) {
+    const file = message.split(" ")[1];
+    if (!file) return socket.write("Përdorimi: /delete <filename>\n");
+
+    fs.unlink(file, (err) => {
+        if (err) socket.write("Gabim gjatë fshirjes së file-it.\n");
+        else socket.write(`🗑 File '${file}' u fshi me sukses!\n`);
+    });
+    return;
+}
+
+if (message.startsWith("/search")) {
+    const keyword = message.split(" ")[1];
+    if (!keyword) return socket.write("Përdorimi: /search <keyword>\n");
+
+    fs.readdir(".", (err, files) => {
+        if (err) return socket.write("Gabim gjatë kërkimit.\n");
+
+        const results = files.filter(f => f.includes(keyword));
+        socket.write(`🔍 Rezultatet për '${keyword}':\n${results.join("\n") || "Asgjë nuk u gjet."}\n`);
+    });
+    return;
+}
+
+if (message.startsWith("/info")) {
+    const file = message.split(" ")[1];
+    if (!file) return socket.write("Përdorimi: /info <filename>\n");
+
+    fs.stat(file, (err, stats) => {
+        if (err) return socket.write("Gabim gjatë leximit të statistikave.\n");
+
+        socket.write(
+            `ℹ Informata për ${file}:\n` +
+            `Madhësia: ${stats.size} bytes\n` +
+            `Krijuar: ${stats.birthtime}\n` +
+            `Modifikuar: ${stats.mtime}\n`
+        );
+    });
+    return;
+}
 
 
         messages.push({ client: clientAddress, message: message, timestamp: new Date() });
