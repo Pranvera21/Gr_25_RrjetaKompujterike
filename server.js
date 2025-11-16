@@ -1,3 +1,6 @@
+
+
+
 const net = require('net');
 const fs = require('fs');
 const { HOST, PORT } = require('./server/config');
@@ -15,19 +18,18 @@ const SERVER_BASE_DIR = path.resolve(__dirname);
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 const server = net.createServer((socket) => {
-    const clientAddress = socket.remoteAddress + ":" + socket.remotePort;
+   const clientIP = socket.remoteAddress;
 
-
-    if (clientDataStore.has(clientAddress)) {
-        const data = clientDataStore.get(clientAddress);
+    if (clientDataStore.has(clientIP)) {
+        const data = clientDataStore.get(clientIP);
         socket.role = data.role;
         socket.write(`🟩 Mirësevini përsëri! Roli yt është rikuperuar: ${socket.role}\n`);
-        console.log(`Klienti u rikuperua: ${clientAddress}`);
+        console.log(`Klienti u rikuperua: ${clientIP}`);
     } else {
-        socket.role = "super"; 
+        socket.role = "user"; 
         socket.write("🟩 Roli yt aktual: " + socket.role + "\n");
 
-        clientDataStore.set(clientAddress, {
+        clientDataStore.set(clientIP, {
             role: socket.role,
             lastMessages: [],
             messageCount: 0,
@@ -40,12 +42,12 @@ const server = net.createServer((socket) => {
     if (activeClients.size >= MAX_CLIENTS) {
         socket.write("Serveri ka arritur numrin maksimal të klientëve. Provo më vonë.\n");
         socket.end();
-        console.log(`Lidhja e re u refuzua: ${clientAddress}`);
+        console.log(`Lidhja e re u refuzua: ${clientIP}`);
         return;
     }
 
     activeClients.add(socket);
-    console.log(`Klienti i ri u lidh: ${clientAddress}`);
+    console.log(`Klienti i ri u lidh: ${clientIP}`);
     socket.write("Je lidhur me serverin!\n");
     const TIMEOUT_MS = 300000; 
     const clientTimers = new Map();
@@ -56,7 +58,7 @@ const server = net.createServer((socket) => {
     const timeout = setTimeout(() => {
         socket.write("Koha e pritjes ka skaduar. Lidhja po mbyllet.\n");
         socket.end();
-        console.log(`Klienti u mbyll për shkak të paaktivitetit: ${clientAddress}`);
+        console.log(`Klienti u mbyll për shkak të paaktivitetit: ${clientIP}`);
     }, TIMEOUT_MS);
 
     clientTimers.set(socket, timeout);
@@ -76,10 +78,10 @@ resetTimer();
     socket.on("data", (data) => {
         const raw = data.toString();
         const message = raw.trim();
-        console.log(`Mesazh nga ${clientAddress}: ${message}`);
+        console.log(`Mesazh nga ${clientIP}: ${message}`);
 
 
-          const clientData = clientDataStore.get(clientAddress);
+          const clientData = clientDataStore.get(clientIP);
         clientData.messageCount += 1;
         clientData.bytesReceived += Buffer.byteLength(data);
 
@@ -99,7 +101,7 @@ resetTimer();
 
     socket.role = newRole;
     clientData.role = newRole;
-    clientDataStore.set(clientAddress, clientData);
+    clientDataStore.set(clientIP, clientData);
 
     socket.write("Roli u ndryshua në: " + newRole + "\n");
     return;
@@ -107,24 +109,6 @@ resetTimer();
 
         const cmd = message.split(" ")[0];
         
-        const superOnly = ["/execute", "/write"];
-        if (superOnly.includes(cmd) && socket.role !== "super") {
-            socket.write(" Nuk ke leje për këtë komandë!\n");
-            return;
-        }
-
-        const adminAllowed = ["/list", "/read", "/upload", "/download", "/delete", "/search", "/info"];
-        if (socket.role === "admin" && !adminAllowed.includes(cmd)) {
-            socket.write(" Komandë e ndaluar për admin.\n");
-            return;
-        }
-
-      
-        const userAllowed = ["/read"];
-        if (socket.role === "user" && !userAllowed.includes(cmd)) {
-            socket.write(" Komandë e ndaluar për user.\n");
-            return;
-        }
 
 if (message === "/list") {
     if (socket.role === "user") {
@@ -297,8 +281,8 @@ if (message.startsWith("/write")) {
         if (message === "/stats") {
             let statsMessage = "\n--- STATISTIKAT E SERVERIT ---\n";
             statsMessage += `Lidhje aktive: ${activeClients.size}\n`;
-            for (const [addr, data] of clientDataStore.entries()) {
-                statsMessage += `Klienti: ${addr}\n`;
+            for (const [ip, data] of clientDataStore.entries()) {
+                statsMessage += `Klienti: ${ip}\n`;
                 statsMessage += `  Role: ${data.role}\n`;
                 statsMessage += `  Numri i mesazheve: ${data.messageCount}\n`;
                 statsMessage += `  Bytes të dërguara: ${data.bytesSent}\n`;
@@ -310,14 +294,12 @@ if (message.startsWith("/write")) {
             return;
         }
 
-        resetTimer(); 
-
     
 
-        messages.push({ client: clientAddress, message: message, timestamp: new Date() });
-        clientDataStore.set(clientAddress, clientData);
-        fs.appendFileSync('server_messages.txt', `[${new Date().toLocaleString()}] ${clientAddress}: ${message}\n`);
-        clientsWithRequests.add(clientAddress);
+        messages.push({ client: clientIP, message: message, timestamp: new Date() });
+        clientDataStore.set(clientIP, clientData);
+        fs.appendFileSync('server_messages.txt', `[${new Date().toLocaleString()}] ${clientIP}: ${message}\n`);
+        clientsWithRequests.add(clientIP);
 
         const response = `Serveri mori mesazhin: ${message}\n`;
         socket.write(response);
@@ -326,7 +308,7 @@ if (message.startsWith("/write")) {
         console.log(`Klientët që kanë bërë të paktën një request: ${Array.from(clientsWithRequests).join(", ")}`);
 
         const clientsWithoutRequests = Array.from(activeClients)
-            .map(s => s.remoteAddress + ":" + s.remotePort)
+            .map(s => s.remoteAddress )
             .filter(addr => !clientsWithRequests.has(addr));
         console.log(`Klientët që nuk kanë bërë ende request: ${clientsWithoutRequests.join(", ")}`);
 
@@ -336,13 +318,13 @@ if (message.startsWith("/write")) {
     socket.on("error", (err) => {
         if (clientTimers.has(socket)) clearTimeout(clientTimers.get(socket)); 
         activeClients.delete(socket);
-         clientsWithRequests.delete(clientAddress); 
-        console.log(`Gabim me klientin ${clientAddress}: ${err.message}`);
+         clientsWithRequests.delete(clientIP); 
+        console.log(`Gabim me klientin ${clientIP}: ${err.message}`);
     });
     socket.on("close", () => {
     activeClients.delete(socket);
-    clientsWithRequests.delete(clientAddress);
-    console.log(`Klienti u shkëput: ${clientAddress}`);
+    clientsWithRequests.delete(clientIP);
+    console.log(`Klienti u shkëput: ${clientIP}`);
 });
 });
 server.listen ( PORT, HOST, () => {
