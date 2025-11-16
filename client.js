@@ -124,22 +124,30 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) =>   {
                 else console.log("Komandë e ndaluar për super. Lejohen vetëm: /read, /execute, /write");
         }
                 
-            } else if (clientRole === "admin") {
-               
-                switch(cmd) {
-                    case "/list": handleList(client); break;
-                    case "/read": handleRead(client, arg); break;
-                    case "/upload": handleUpload(client, arg); break;
-                    case "/download": handleDownload(client, arg); break;
-                    case "/delete": handleDelete(client, arg); break;
-                    case "/search": handleSearch(client, arg); break;
-                    case "/info": handleInfo(client, arg); break;
-                    default: console.log(" Komandë e ndaluar për admin.");
-                }
-                                if (!cmd.startsWith("/")) client.write(input + '\n');
-                else console.log("Komandë e ndaluar për admin.");
+    } else if (clientRole === "admin") {
 
-}
+        switch(cmd) {
+    
+            case "/list": handleList(client); break;
+            case "/read": handleRead(client, arg); break;
+            case "/upload": handleUpload(client, arg); break;
+            case "/download": handleDownload(client, arg); break;
+            case "/delete": handleDelete(client, arg); break;
+            case "/search": handleSearch(client, arg); break;
+            case "/info": handleInfo(client, arg); break;
+    
+            default:
+               
+                if (cmd.startsWith("/")) {
+                    console.log("Komandë e ndaluar për admin.");
+                }
+        }
+    
+       
+        if (!cmd.startsWith("/")) {
+            client.write(input + "\n");
+        }
+    }
             
 
                   
