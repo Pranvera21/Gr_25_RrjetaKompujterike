@@ -68,6 +68,21 @@ resetTimer();
         return resolved;
     }
 
+     ROLE_DELAYS = {
+  user: 1000,
+  admin: 0,
+  super: 0
+};
+
+function sendResponse(socket, message) {
+    const delay = ROLE_DELAYS[socket.role] || 0;
+    setTimeout(() => {
+        socket.write(message);
+        const clientData = clientDataStore.get(socket.remoteAddress);
+        if (clientData) clientData.bytesSent += Buffer.byteLength(message);
+    }, delay);
+}
+
 
   
 
@@ -171,16 +186,16 @@ if (message === "/list") {
 }
 if (message.startsWith("/read")) {
     const file = message.split(" ")[1];
-    if (!file) return socket.write("Përdorimi: /read <filename>\n");
+    if (!file) return sendResponse(socket,"Përdorimi: /read <filename>\n");
 
     const safe = safeServerPath(file);
 
-    if (!safe) return socket.write("Path i pavlefshëm ose jashtë direktoriumit.\n");
+    if (!safe) return sendResponse(socket,"Path i pavlefshëm ose jashtë direktoriumit.\n");
 
 
     fs.readFile(safe, "utf8", (err, data) => {
-        if (err) socket.write("Gabim gjatë leximit të file-it.\n");
-        else socket.write(`📄 Përmbajtja e ${file}:\n${data}\n`);
+        if (err) sendResponse(socket,"Gabim gjatë leximit të file-it.\n");
+        else sendResponse(socket,`📄 Përmbajtja e ${file}:\n${data}\n`);
     });
     return;
 }
