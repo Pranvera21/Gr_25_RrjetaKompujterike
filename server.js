@@ -216,14 +216,19 @@ if (message.startsWith("/delete")) {
 if (message.startsWith("/search")) {
     const keyword = message.split(" ")[1];
     if (!keyword) return socket.write("Përdorimi: /search <keyword>\n");
-
-   const safe =SERVER_BASE_DIR;
-
-
-    fs.readdir(safe, (err, files) => {
+    fs.readdir(SERVER_BASE_DIR, (err, files) => {
         if (err) return socket.write("Gabim gjatë kërkimit.\n");
 
-        const results = files.filter(f => f.includes(keyword));
+        let results = [];
+        files.forEach((f) => {
+            const filePath = path.join(SERVER_BASE_DIR, f);
+            if (fs.statSync(filePath).isFile()) {
+                const content = fs.readFileSync(filePath, "utf8");
+                if (content.includes(keyword)) {
+                    results.push(f);
+                }
+            }
+        });
         socket.write(`🔍 Rezultatet për '${keyword}':\n${results.join("\n") || "Asgjë nuk u gjet."}\n`);
     });
     return;
