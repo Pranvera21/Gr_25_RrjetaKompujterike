@@ -34,14 +34,34 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
             if (!filename) return console.log("Përdorimi: /read <filename>");
             client.write(`/read ${filename}\n`);
         }
-        function handleUpload(client, filename) {
-            if (!filename) return console.log("Përdorimi: /upload <filename>");
-            const filePath = path.join(__dirname, filename);
-            if (!fs.existsSync(filePath)) return console.log("Gabim: File nuk ekziston në klient!");
-            const content = fs.readFileSync(filePath);
-            const encoded = Buffer.from(content).toString("base64");
-            client.write(`/upload ${filename} ${encoded}\n`);
+        
+        function handleUpload(client) {
+    rl.question("➡ Shkruaj path-in e file-it që dëshiron të ngarkosh: ", (localPath) => {
+
+        localPath = localPath.trim();
+
+        if (!fs.existsSync(localPath)) {
+            console.log("❌ Gabim: File-i nuk ekziston!");
+            return;
         }
+
+        rl.question("➡ Me cilin emër dëshiron të ruhet në server? ", (serverFilename) => {
+
+            serverFilename = serverFilename.trim();
+            if (!serverFilename) {
+                console.log("❌ Duhet të japësh një emër file-i!");
+                return;
+            }
+
+            const fileData = fs.readFileSync(localPath);
+            const base64 = fileData.toString("base64");
+
+            client.write(`/upload ${serverFilename} ${base64}\n`);
+            console.log(`📤 File '${localPath}' po dërgohet te serveri si '${serverFilename}'...`);
+        });
+    });
+}
+
         function handleDownload(client, filename) {
             if (!filename) return console.log("Përdorimi: /download <filename>");
             rl.question("Shkruaj path-in ku dëshiron ta ruash file-in: ", (savePath) => {
@@ -64,7 +84,6 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
         function handleWrite(client, filename, content) {
             if (!filename) return console.log("Përdorimi: /write <filename> <content>");
             if (!content) return console.log("Përdorimi: /write <filename> <content>");
-            // Encode content në base64 për të dërguar sigurt
             const encoded = Buffer.from(content).toString("base64");
             client.write(`/write ${filename} ${encoded}\n`);
         }
@@ -75,13 +94,11 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
             const arg = parts[1];
 
             if (clientRole === "super") {
-                // Kontrollo nëse është komandë /write
                 if (cmd === "/write") {
                     const filename = parts[1];
                     const content = parts.slice(2).join(" ");
                     handleWrite(client, filename, content);
                 } else {
-                    // Nëse nuk është komandë /write, dërgo si mesazh
                     client.write(input + '\n');
                 }
             } else if (clientRole === "admin") {
