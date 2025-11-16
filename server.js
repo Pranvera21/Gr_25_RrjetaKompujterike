@@ -5,7 +5,7 @@ const { exec } = require('child_process');
 const path = require("path");
 
 
-const MAX_CLIENTS = 3;         
+const MAX_CLIENTS = 4;         
 const activeClients = new Set(); 
 const clientsWithRequests = new Set();  
 const messages = [];
