@@ -44,7 +44,10 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
         }
         function handleDownload(client, filename) {
             if (!filename) return console.log("Përdorimi: /download <filename>");
-            client.write(`/download ${filename}\n`);
+            rl.question("Shkruaj path-in ku dëshiron ta ruash file-in: ", (savePath) => {
+                client.downloadPath = savePath.trim(); 
+                client.write(`/download ${filename}\n`);
+            });
         }
         function handleDelete(client, filename) {
             if (!filename) return console.log("Përdorimi: /delete <filename>");
@@ -104,8 +107,11 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
             const filename = parts[1];
             const base64content = parts.slice(2).join(" ");
             const content = Buffer.from(base64content, 'base64');
-            fs.writeFileSync(filename, content);
-            console.log(`📥 File '${filename}' u shkarkua me sukses!`);
+            const outputPath = client.downloadPath
+        ? path.join(client.downloadPath, filename)
+        : filename;
+            fs.writeFileSync(outputPath, content);
+            console.log(`📥 File '${filename}' u shkarkua me sukses te ${outputPath}!`);
             return;
         }
         console.log(" Mesazh nga serveri:", message);
