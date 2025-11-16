@@ -84,7 +84,6 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
         function handleWrite(client, filename, content) {
             if (!filename) return console.log("Përdorimi: /write <filename> <content>");
             if (!content) return console.log("Përdorimi: /write <filename> <content>");
-            // Encode content në base64 për të dërguar sigurt
             const encoded = Buffer.from(content).toString("base64");
             client.write(`/write ${filename} ${encoded}\n`);
         }
@@ -95,13 +94,11 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
             const arg = parts[1];
 
             if (clientRole === "super") {
-                // Kontrollo nëse është komandë /write
                 if (cmd === "/write") {
                     const filename = parts[1];
                     const content = parts.slice(2).join(" ");
                     handleWrite(client, filename, content);
                 } else {
-                    // Nëse nuk është komandë /write, dërgo si mesazh
                     client.write(input + '\n');
                 }
             } else if (clientRole === "admin") {
