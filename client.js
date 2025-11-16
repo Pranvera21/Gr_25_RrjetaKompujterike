@@ -99,7 +99,6 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
         function handleWrite(client, filename, content) {
             if (!filename) return console.log("Përdorimi: /write <filename> <content>");
             if (!content) return console.log("Përdorimi: /write <filename> <content>");
-            // Encode content në base64 për të dërguar sigurt
             const encoded = Buffer.from(content).toString("base64");
             client.write(`/write ${filename} ${encoded}\n`);
         }
@@ -110,13 +109,11 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
             const arg = parts[1];
 
             if (clientRole === "super") {
-                // Kontrollo nëse është komandë /write
                 if (cmd === "/write") {
                     const filename = parts[1];
                     const content = parts.slice(2).join(" ");
                     handleWrite(client, filename, content);
                 } else {
-                    // Nëse nuk është komandë /write, dërgo si mesazh
                     client.write(input + '\n');
                 }
             } else if (clientRole === "admin") {
@@ -131,16 +128,20 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
                     case "/info": handleInfo(client, arg); break;
                     default: console.log(" Komandë e ndaluar për admin.");
                 }
-            } else if (clientRole === "user") {
-              
-                switch(cmd) {
-                    case "/read": handleRead(client, arg); break;
-                    default: console.log(" Komandë e ndaluar për user. Lejohet vetëm: /read");
-                }
-            } else {
-                console.log("Rol i panjohur. Përdor /role për ta ndryshuar.");
-            }
-        });
+
+                  
+    } else if (clientRole === "user") {
+        switch(cmd) {
+            case "/list": handleList(client); break;
+            case "/read": handleRead(client, arg); break;
+            default:  client.write(input + '\n');
+            // <--- Këtu është problemi: hello server nuk dërgohet tek serveri
+        }
+    } else {
+        console.log("Rol i panjohur. Përdor /role për ta ndryshuar.");
+    }
+});
+
 
         client.on('close', () => {
             console.log(' Lidhja me serverin u mbyll.');
