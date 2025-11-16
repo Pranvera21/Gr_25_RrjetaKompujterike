@@ -20,7 +20,7 @@ const server = net.createServer((socket) => {
     if (clientDataStore.has(clientIP)) {
         const data = clientDataStore.get(clientIP);
         socket.role = data.role;
-        socket.write(` Mirësevini përsëri! Roli yt është rikuperuar: ${socket.role}\n`);
+        socket.write(` Mirësevini përsëri! Roli yt është rikuperuar\n`);
         console.log(`Klienti u rikuperua: ${clientIP}`);
     } else {
         socket.role = null; 
