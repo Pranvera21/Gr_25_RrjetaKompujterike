@@ -146,12 +146,11 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) =>   {
   else if (clientRole === "user") {
     switch(cmd) {
         case "/read": handleRead(client, arg); break;
-        case "/stats": client.write(input + '\n'); break;
         default:
             if (!cmd.startsWith("/")) {
                 client.write(input + '\n');  
             } else {
-                console.log("Komandë e ndaluar për user. Lejohet vetëm: /read dhe /stats");
+                console.log("Komandë e ndaluar për user. Lejohet vetëm: /read ");
             }
     }
 }
