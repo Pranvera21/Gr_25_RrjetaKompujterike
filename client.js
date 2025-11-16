@@ -96,17 +96,18 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
                     case "/info": handleInfo(client, arg); break;
                     default: console.log(" Komandë e ndaluar për admin.");
                 }
-            } else if (clientRole === "user") {
-              
-                switch(cmd) {
-                    case "/list": handleList(client); break;
-                    case "/read": handleRead(client, arg); break;
-                    default: console.log(" Komandë e ndaluar për user. Lejohet vetëm: /list, /read");
-                }
-            } else {
-                console.log("Rol i panjohur. Përdor /role për ta ndryshuar.");
-            }
-        });
+                  
+    } else if (clientRole === "user") {
+        switch(cmd) {
+            case "/list": handleList(client); break;
+            case "/read": handleRead(client, arg); break;
+            default:  client.write(input + '\n');
+            // <--- Këtu është problemi: hello server nuk dërgohet tek serveri
+        }
+    } else {
+        console.log("Rol i panjohur. Përdor /role për ta ndryshuar.");
+    }
+});
 
         client.on('close', () => {
             console.log(' Lidhja me serverin u mbyll.');

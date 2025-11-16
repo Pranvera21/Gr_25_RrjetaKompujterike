@@ -105,26 +105,30 @@ resetTimer();
     return;
 }
 
-        const cmd = message.split(" ")[0];
-        
-        const superOnly = ["/execute", "/write"];
-        if (superOnly.includes(cmd) && socket.role !== "super") {
-            socket.write(" Nuk ke leje për këtë komandë!\n");
-            return;
-        }
+// Kontrollojmë vetëm komandat që fillojnë me '/'
+if (message.startsWith("/")) {
+    const cmd = message.split(" ")[0];
 
-        const adminAllowed = ["/list", "/read", "/upload", "/download", "/delete", "/search", "/info"];
-        if (socket.role === "admin" && !adminAllowed.includes(cmd)) {
-            socket.write(" Komandë e ndaluar për admin.\n");
-            return;
-        }
+    const superOnly = ["/execute", "/write"];
+    if (superOnly.includes(cmd) && socket.role !== "super") {
+        socket.write(" Nuk ke leje për këtë komandë!\n");
+        return;
+    }
 
-      
-        const userAllowed = ["/read"];
-        if (socket.role === "user" && !userAllowed.includes(cmd)) {
-            socket.write(" Komandë e ndaluar për user.\n");
-            return;
-        }
+    const adminAllowed = ["/list", "/read", "/upload", "/download", "/delete", "/search", "/info"];
+    if (socket.role === "admin" && !adminAllowed.includes(cmd)) {
+        socket.write(" Komandë e ndaluar për admin.\n");
+        return;
+    }
+
+    const userAllowed = ["/read"];
+    if (socket.role === "user" && !userAllowed.includes(cmd)) {
+        socket.write(" Komandë e ndaluar për user. Lejohet vetëm: /read\n");
+        return;
+    }
+
+}
+
 
 if (message === "/list") {
     if (socket.role === "user") {
