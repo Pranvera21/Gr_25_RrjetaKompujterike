@@ -3,8 +3,22 @@ const readline = require('readline');
 const fs = require('fs');
 const path = require('path');
 
+const crypto = require('crypto');
+
+// Krijo ose lexo clientID unik
+const clientIDPath = "clientID.txt";
+let clientID;
+
+if (fs.existsSync(clientIDPath)) {
+    clientID = fs.readFileSync(clientIDPath, "utf8").trim();
+} else {
+    clientID = crypto.randomUUID();
+    fs.writeFileSync(clientIDPath, clientID);
+}
+
 const HOST = '127.0.0.1';
 const PORT = 8084;
+
 
 const rlRole = readline.createInterface({
     input: process.stdin,
@@ -22,6 +36,7 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
 
     client.connect(PORT, HOST, () => {
         console.log(' U lidhët me serverin me sukses!');
+         client.write(`/id ${clientID}\n`);
         client.write(`/role ${clientRole}\n`);
 
         const rl = readline.createInterface({
@@ -34,7 +49,7 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
             if (!filename) return console.log("Përdorimi: /read <filename>");
             client.write(`/read ${filename}\n`);
         }
-        
+
         function handleUpload(client) {
     rl.question("➡ Shkruaj path-in e file-it që dëshiron të ngarkosh: ", (localPath) => {
 
@@ -113,6 +128,7 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
                     case "/info": handleInfo(client, arg); break;
                     default: console.log(" Komandë e ndaluar për admin.");
                 }
+
                   
     } else if (clientRole === "user") {
         switch(cmd) {
@@ -125,6 +141,7 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
         console.log("Rol i panjohur. Përdor /role për ta ndryshuar.");
     }
 });
+
 
         client.on('close', () => {
             console.log(' Lidhja me serverin u mbyll.');

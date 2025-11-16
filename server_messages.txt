@@ -24,5 +24,8 @@
 [11/16/2025, 11:48:30 AM] 127.0.0.1:64715: /write test.txt shkrim i ri
 [11/16/2025, 11:51:12 AM] 127.0.0.1:64715: /write test.txt pershendetje nga klienti
 [11/16/2025, 11:52:27 AM] 127.0.0.1:64715: /write ky tekst te ruhet ne fajll
+<<<<<<< HEAD
 [11/16/2025, 4:01:29 PM] 127.0.0.1:49506: hello server
 [11/16/2025, 6:35:50 PM] 127.0.0.1:49720: hello server
+=======
+>>>>>>> 7085c6c92e6b94b3bee0994725059aaca63248c3
