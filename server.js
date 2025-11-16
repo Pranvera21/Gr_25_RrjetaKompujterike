@@ -121,14 +121,13 @@ if (message.startsWith("/")) {
         return;
     }
 
-    const userAllowed = ["/read"];
-    if (socket.role === "user" && !userAllowed.includes(cmd)) {
-        socket.write(" Komandë e ndaluar për user. Lejohet vetëm: /read\n");
-        return;
-    }
-
+const userAllowed = ["/read", "/stats"];
+if (socket.role === "user" && !userAllowed.includes(cmd)) {
+    socket.write(" Komandë e ndaluar për user. Lejohet vetëm: /read dhe /stats\n");
+    return;
 }
 
+}
 
 if (message === "/list") {
     if (socket.role === "user") {

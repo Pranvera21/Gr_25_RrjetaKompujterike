@@ -1,0 +1,27 @@
+
+--- STATISTIKAT E SERVERIT ---
+Lidhje aktive: 1
+Klienti: 127.0.0.1:49720
+  Role: super
+  Numri i mesazheve: 3
+  Bytes të dërguara: 36
+  Bytes të pranuara: 32
+
+
+--- STATISTIKAT E SERVERIT ---
+Lidhje aktive: 1
+Klienti: 127.0.0.1:49731
+  Role: user
+  Numri i mesazheve: 3
+  Bytes të dërguara: 0
+  Bytes të pranuara: 33
+
+
+--- STATISTIKAT E SERVERIT ---
+Lidhje aktive: 1
+Klienti: 127.0.0.1:49739
+  Role: user
+  Numri i mesazheve: 3
+  Bytes të dërguara: 0
+  Bytes të pranuara: 34
+
