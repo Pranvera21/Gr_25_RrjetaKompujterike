@@ -158,26 +158,25 @@ if (message.startsWith("/upload")) {
     const base64data = parts.slice(2).join(" ");
 
     if (!filename || !base64data)
-        return socket.write("Përdorimi: /upload <filename> <data>\n");
+        return socket.write("Përdorimi: /upload <filename> <base64data>\n");
 
-   const safe = safeServerPath(filename);
-
-
+    const safe = safeServerPath(filename);
     if (!safe) return socket.write("Path i pavlefshëm ose jashtë direktoriumit.\n");
 
-    const content = Buffer.from(base64data, "base64");
-    if (content.length > MAX_UPLOAD_BYTES) {
-                return socket.write("Gabim: File i madh. Maksimumi 5MB.\n");
-            }
+    const buffer = Buffer.from(base64data, "base64");
 
+    if (buffer.length > MAX_UPLOAD_BYTES) {
+        return socket.write("Gabim: File shumë i madh. Maksimumi 5MB.\n");
+    }
 
-
-    fs.writeFile(safe, content, (err) => {
-        if (err) socket.write("Gabim gjatë ruajtjes së file-it.\n");
-        else socket.write(`📤 File '${filename}' u ngarkua me sukses!\n`);
+    fs.writeFile(safe, buffer, (err) => {
+        if (err) socket.write("❌ Gabim gjatë ruajtjes së file-it.\n");
+        else socket.write(`📥 File '${filename}' u ngarkua me sukses në server!\n`);
     });
+
     return;
 }
+
 
 if (message.startsWith("/download")) {
     const file = message.split(" ")[1];
