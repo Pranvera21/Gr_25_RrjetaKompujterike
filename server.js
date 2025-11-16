@@ -1,6 +1,3 @@
-
-
-
 const net = require('net');
 const fs = require('fs');
 const { HOST, PORT } = require('./server/config');
@@ -107,8 +104,6 @@ resetTimer();
     return;
 }
 
-<<<<<<< HEAD
-// Kontrollojmë vetëm komandat që fillojnë me '/'
 if (message.startsWith("/")) {
     const cmd = message.split(" ")[0];
 
@@ -131,11 +126,8 @@ if (socket.role === "user" && !userAllowed.includes(cmd)) {
 }
 
 }
-=======
         const cmd = message.split(" ")[0];
         
->>>>>>> 7085c6c92e6b94b3bee0994725059aaca63248c3
-
 if (message === "/list") {
     if (socket.role === "user") {
             socket.write(" Nuk ke leje për këtë komandë!\n");
@@ -180,7 +172,7 @@ if (message.startsWith("/upload")) {
     }
 
     fs.writeFile(safe, buffer, (err) => {
-        if (err) socket.write("❌ Gabim gjatë ruajtjes së file-it.\n");
+        if (err) socket.write(" Gabim gjatë ruajtjes së file-it.\n");
         else socket.write(`📥 File '${filename}' u ngarkua me sukses në server!\n`);
     });
 
