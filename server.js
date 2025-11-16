@@ -1,14 +1,18 @@
 const net = require('net');
 const fs = require('fs');
 const { HOST, PORT } = require('./server/config');
+const { exec } = require('child_process'); 
+const path = require("path");
+
 
 const MAX_CLIENTS = 3;         
 const activeClients = new Set(); 
 const clientsWithRequests = new Set();  
-
 const messages = [];
+const clientDataStore = new Map();
 
-const clientDataStore = new Map(); 
+const SERVER_BASE_DIR = path.resolve(__dirname); 
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 const server = net.createServer((socket) => {
     const clientAddress = socket.remoteAddress + ":" + socket.remotePort;
@@ -60,81 +64,74 @@ const server = net.createServer((socket) => {
 
 resetTimer();
 
+ function safeServerPath(requested) {
+        const resolved = path.resolve(SERVER_BASE_DIR, requested);
+        if (!resolved.startsWith(SERVER_BASE_DIR)) return null; 
+        return resolved;
+    }
+
 
   
 
     socket.on("data", (data) => {
-        const message = data.toString().trim();
+        const raw = data.toString();
+        const message = raw.trim();
         console.log(`Mesazh nga ${clientAddress}: ${message}`);
 
 
           const clientData = clientDataStore.get(clientAddress);
-
         clientData.messageCount += 1;
         clientData.bytesReceived += Buffer.byteLength(data);
 
+       if (message.startsWith("/role")) {
+    const parts = message.split(" ");
+    const newRole = parts[1];
 
-        if (message.startsWith("/role")) {
-            const parts = message.split(" ");
-            const newRole = parts[1];
-
-            if (!newRole) {
-                socket.write("Përdorimi: /role admin ose /role super\n");
-                return;
-            }
-
-            if (!["admin", "super"].includes(newRole)) {
-                socket.write("Rol i pavlefshëm! Lejohen vetëm: admin, super\n");
-                return;
-            }
-            socket.role = newRole;
-            clientData.role = newRole;   
-            clientDataStore.set(clientAddress, clientData);
-            socket.write("Roli u ndryshua në: " + socket.role + "\n");
-            return;
-        }
-//const restrictedCommands = ["/upload", "/delete", "/download", "/execute"];
-
-        const restrictedCommands = ["/execute"];
-        const cmd = message.split(" ")[0];
-
-    if (restrictedCommands.includes(cmd) && socket.role !== "super") {
-        socket.write(" Nuk ke leje për këtë komandë!\n");
+    if (!newRole) {
+        socket.write("Përdorimi: /role <user|admin|super>\n");
         return;
     }
 
-     if (message.startsWith("/ls") && socket.role === "super") {
-            const parts = message.split(" ");
-            const dir = parts[1] || "."; 
-            fs.readdir(dir, (err, files) => {
-                if (err) {
-                    socket.write(`Gabim gjatë leximit të folderit: ${err.message}\n`);
-                } else {
-                    socket.write(`Përmbajtja e folderit '${dir}':\n` + files.join("\n") + "\n");
-                }
-            });
+    if (!["user", "admin", "super"].includes(newRole)) {
+        socket.write("Rol i pavlefshëm! Lejohen: user, admin, super\n");
+        return;
+    }
+
+    socket.role = newRole;
+    clientData.role = newRole;
+    clientDataStore.set(clientAddress, clientData);
+
+    socket.write("Roli u ndryshua në: " + newRole + "\n");
+    return;
+}
+
+        const cmd = message.split(" ")[0];
+        
+        const superOnly = ["/execute"];
+        if (superOnly.includes(cmd) && socket.role !== "super") {
+            socket.write(" Nuk ke leje për këtë komandë!\n");
             return;
         }
 
-        if (message.startsWith("/cat") && socket.role === "super") {
-            const parts = message.split(" ");
-            const file = parts[1];
-            if (!file) {
-                socket.write("Përdorimi: /cat <filename>\n");
-                return;
-            }
-            fs.readFile(file, "utf8", (err, data) => {
-                if (err) {
-                    socket.write(`Gabim gjatë leximin e file-it: ${err.message}\n`);
-                } else {
-                    socket.write(`Përmbajtja e file-it '${file}':\n${data}\n`);
-                }
-            });
+        const adminAllowed = ["/list", "/read", "/upload", "/download", "/delete", "/search", "/info"];
+        if (socket.role === "admin" && !adminAllowed.includes(cmd)) {
+            socket.write(" Komandë e ndaluar për admin.\n");
+            return;
+        }
+
+      
+        const userAllowed = ["/read"];
+        if (socket.role === "user" && !userAllowed.includes(cmd)) {
+            socket.write(" Komandë e ndaluar për user.\n");
             return;
         }
 
 if (message === "/list") {
-    fs.readdir(".", (err, files) => {
+    if (socket.role === "user") {
+            socket.write(" Nuk ke leje për këtë komandë!\n");
+        return;
+    }
+    fs.readdir(SERVER_BASE_DIR, (err, files) => {
         if (err) socket.write("Gabim gjatë listimit të direktorive.\n");
         else socket.write("📂 File-at në server:\n" + files.join("\n") + "\n");
     });
@@ -144,7 +141,12 @@ if (message.startsWith("/read")) {
     const file = message.split(" ")[1];
     if (!file) return socket.write("Përdorimi: /read <filename>\n");
 
-    fs.readFile(file, "utf8", (err, data) => {
+    const safe = safeServerPath(file);
+
+    if (!safe) return socket.write("Path i pavlefshëm ose jashtë direktoriumit.\n");
+
+
+    fs.readFile(safe, "utf8", (err, data) => {
         if (err) socket.write("Gabim gjatë leximit të file-it.\n");
         else socket.write(`📄 Përmbajtja e ${file}:\n${data}\n`);
     });
@@ -158,9 +160,19 @@ if (message.startsWith("/upload")) {
     if (!filename || !base64data)
         return socket.write("Përdorimi: /upload <filename> <data>\n");
 
-    const content = Buffer.from(base64data, "base64").toString("utf8");
+   const safe = safeServerPath(filename);
 
-    fs.writeFile(filename, content, (err) => {
+
+    if (!safe) return socket.write("Path i pavlefshëm ose jashtë direktoriumit.\n");
+
+    const content = Buffer.from(base64data, "base64");
+    if (content.length > MAX_UPLOAD_BYTES) {
+                return socket.write("Gabim: File i madh. Maksimumi 5MB.\n");
+            }
+
+
+
+    fs.writeFile(safe, content, (err) => {
         if (err) socket.write("Gabim gjatë ruajtjes së file-it.\n");
         else socket.write(`📤 File '${filename}' u ngarkua me sukses!\n`);
     });
@@ -171,8 +183,13 @@ if (message.startsWith("/download")) {
     const file = message.split(" ")[1];
     if (!file) return socket.write("Përdorimi: /download <filename>\n");
 
-    fs.readFile(file, (err, data) => {
+    const safe = safeServerPath(file); 
+    if (!safe) return socket.write("Path i pavlefshëm ose jashtë direktoriumit.\n");
+
+
+    fs.readFile(safe, (err, data) => {
         if (err) return socket.write("Gabim gjatë leximit të file-it.\n");
+
 
         const base64Content = data.toString("base64");
         socket.write(`/file ${file} ${base64Content}\n`);
@@ -184,7 +201,12 @@ if (message.startsWith("/delete")) {
     const file = message.split(" ")[1];
     if (!file) return socket.write("Përdorimi: /delete <filename>\n");
 
-    fs.unlink(file, (err) => {
+    const safe = safeServerPath(file);
+
+
+            if (!safe) return socket.write("Path i pavlefshëm ose jashtë direktoriumit.\n");
+
+    fs.unlink(safe, (err) => {
         if (err) socket.write("Gabim gjatë fshirjes së file-it.\n");
         else socket.write(`🗑 File '${file}' u fshi me sukses!\n`);
     });
@@ -195,7 +217,10 @@ if (message.startsWith("/search")) {
     const keyword = message.split(" ")[1];
     if (!keyword) return socket.write("Përdorimi: /search <keyword>\n");
 
-    fs.readdir(".", (err, files) => {
+   const safe =SERVER_BASE_DIR;
+
+
+    fs.readdir(safe, (err, files) => {
         if (err) return socket.write("Gabim gjatë kërkimit.\n");
 
         const results = files.filter(f => f.includes(keyword));
@@ -208,7 +233,10 @@ if (message.startsWith("/info")) {
     const file = message.split(" ")[1];
     if (!file) return socket.write("Përdorimi: /info <filename>\n");
 
-    fs.stat(file, (err, stats) => {
+     const safe = safeServerPath(file);
+    if (!safe) return socket.write("Path i pavlefshëm ose jashtë direktoriumit.\n");
+
+    fs.stat(safe, (err, stats) => {
         if (err) return socket.write("Gabim gjatë leximit të statistikave.\n");
 
         socket.write(
@@ -220,30 +248,25 @@ if (message.startsWith("/info")) {
     });
     return;
 }
+ if (message.startsWith("/execute")) {
+            const parts = message.split(" ");
+            const command = parts.slice(1).join(" ");
+            if (!command) return socket.write("Përdorimi: /execute <cmd>\n");
 
+         
+            if (command.length > 200) return socket.write("Komanda shumë e gjatë.\n");
 
-        messages.push({ client: clientAddress, message: message, timestamp: new Date() });
+            exec(command, { timeout: 5000, maxBuffer: 1024 * 1024 }, (err, stdout, stderr) => {
+                if (err) {
+                    socket.write(`Gabim gjatë ekzekutimit: ${err.message}\n`);
+                    if (stderr) socket.write(`STDERR: ${stderr}\n`);
+                } else {
+                    socket.write(`OUTPUT:\n${stdout}\n`);
+                }
+            });
+            return;
+        }
 
-         clientDataStore.set(clientAddress, clientData);
-
-        fs.appendFileSync('server_messages.txt', `[${new Date().toLocaleString()}] ${clientAddress}: ${message}\n`);
-
-
-        clientsWithRequests.add(clientAddress);
-        
-
-       const response = `Serveri mori mesazhin: ${message}\n`;
-        socket.write(response);
-        clientData.bytesSent += Buffer.byteLength(response);
-        
-     
-        console.log(`Klientët që kanë bërë të paktën një request: ${Array.from(clientsWithRequests).join(", ")}`);
-
-   
-        const clientsWithoutRequests = Array.from(activeClients)
-            .map(s => s.remoteAddress + ":" + s.remotePort)
-            .filter(addr => !clientsWithRequests.has(addr));
-        console.log(`Klientët që nuk kanë bërë ende request: ${clientsWithoutRequests.join(", ")}`);
 
         if (message === "/stats") {
             let statsMessage = "\n--- STATISTIKAT E SERVERIT ---\n";
@@ -258,17 +281,30 @@ if (message.startsWith("/info")) {
             console.log(statsMessage);
             fs.appendFileSync('server_stats.txt', statsMessage + '\n');
             socket.write(" Statistikat u shfaqën në server log.\n");
+            return;
         }
 
         resetTimer(); 
 
-    });
+    
 
-    socket.on("end", () => {
-        if (clientTimers.has(socket)) clearTimeout(clientTimers.get(socket));
-        activeClients.delete(socket);
-           clientsWithRequests.delete(clientAddress); 
-        console.log(`Klienti u shkëput: ${clientAddress}`);
+        messages.push({ client: clientAddress, message: message, timestamp: new Date() });
+        clientDataStore.set(clientAddress, clientData);
+        fs.appendFileSync('server_messages.txt', `[${new Date().toLocaleString()}] ${clientAddress}: ${message}\n`);
+        clientsWithRequests.add(clientAddress);
+
+        const response = `Serveri mori mesazhin: ${message}\n`;
+        socket.write(response);
+        clientData.bytesSent += Buffer.byteLength(response);
+
+        console.log(`Klientët që kanë bërë të paktën një request: ${Array.from(clientsWithRequests).join(", ")}`);
+
+        const clientsWithoutRequests = Array.from(activeClients)
+            .map(s => s.remoteAddress + ":" + s.remotePort)
+            .filter(addr => !clientsWithRequests.has(addr));
+        console.log(`Klientët që nuk kanë bërë ende request: ${clientsWithoutRequests.join(", ")}`);
+
+        resetTimer();
     });
 
     socket.on("error", (err) => {
@@ -277,7 +313,11 @@ if (message.startsWith("/info")) {
          clientsWithRequests.delete(clientAddress); 
         console.log(`Gabim me klientin ${clientAddress}: ${err.message}`);
     });
+    socket.on("close", () => {
+    activeClients.delete(socket);
+    clientsWithRequests.delete(clientAddress);
+    console.log(`Klienti u shkëput: ${clientAddress}`);
+});
 });
 server.listen ( PORT, HOST, () => {
-  console.log(`Serveri po dëgjon në ${HOST}:${PORT}`);
-});
+  console.log(`Serveri po dëgjon në ${HOST}:${PORT}`); });
