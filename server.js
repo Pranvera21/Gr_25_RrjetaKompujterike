@@ -107,7 +107,7 @@ resetTimer();
 
         const cmd = message.split(" ")[0];
         
-        const superOnly = ["/execute"];
+        const superOnly = ["/execute", "/write"];
         if (superOnly.includes(cmd) && socket.role !== "super") {
             socket.write(" Nuk ke leje për këtë komandë!\n");
             return;
@@ -272,6 +272,28 @@ if (message.startsWith("/info")) {
             return;
         }
 
+if (message.startsWith("/write")) {
+    const parts = message.split(" ");
+    const filename = parts[1];
+    const base64data = parts.slice(2).join(" ");
+
+    if (!filename || !base64data)
+        return socket.write("Përdorimi: /write <filename> <content>\n");
+
+    const safe = safeServerPath(filename);
+    if (!safe) return socket.write("Path i pavlefshëm ose jashtë direktoriumit.\n");
+
+    const content = Buffer.from(base64data, "base64");
+    if (content.length > MAX_UPLOAD_BYTES) {
+        return socket.write("Gabim: Përmbajtja shumë e madhe. Maksimumi 5MB.\n");
+    }
+
+    fs.writeFile(safe, content, (err) => {
+        if (err) socket.write("Gabim gjatë shkrimit në file.\n");
+        else socket.write(`✍️ Përmbajtja u shkrua me sukses në '${filename}'!\n`);
+    });
+    return;
+}
 
         if (message === "/stats") {
             let statsMessage = "\n--- STATISTIKAT E SERVERIT ---\n";
