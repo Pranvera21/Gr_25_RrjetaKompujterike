@@ -20,19 +20,18 @@ const server = net.createServer((socket) => {
     if (clientDataStore.has(clientIP)) {
         const data = clientDataStore.get(clientIP);
         socket.role = data.role;
-        socket.write(`🟩 Mirësevini përsëri! Roli yt është rikuperuar\n`);
+        socket.write(` Mirësevini përsëri! Roli yt është rikuperuar: ${socket.role}\n`);
         console.log(`Klienti u rikuperua: ${clientIP}`);
     } else {
-        socket.role = "user"; 
-        socket.write("🟩 Roli yt aktual: " + socket.role + "\n");
+        socket.role = null; 
 
         clientDataStore.set(clientIP, {
-            role: socket.role,
+            role: null,
             lastMessages: [],
             messageCount: 0,
             bytesSent: 0,
             bytesReceived: 0,
-            reconnected: true
+            reconnected: false
         });
     }
 
@@ -77,10 +76,25 @@ resetTimer();
         const message = raw.trim();
         console.log(`Mesazh nga ${clientIP}: ${message}`);
 
-
-          const clientData = clientDataStore.get(clientIP);
+        let clientData = clientDataStore.get(clientIP);
+        if (!clientData) {
+            clientData = {
+                role: socket.role || "user",
+                lastMessages: [],
+                messageCount: 0,
+                bytesSent: 0,
+                bytesReceived: 0,
+                reconnected: false
+            };
+            clientDataStore.set(clientIP, clientData);
+        }
+        
         clientData.messageCount += 1;
         clientData.bytesReceived += Buffer.byteLength(data);
+
+       if (message.startsWith("/id")) {
+           return;
+       }
 
        if (message.startsWith("/role")) {
     const parts = message.split(" ");
@@ -96,16 +110,32 @@ resetTimer();
         return;
     }
 
+    const wasFirstTime = !socket.role; 
     socket.role = newRole;
     clientData.role = newRole;
     clientDataStore.set(clientIP, clientData);
 
-    socket.write("Roli u ndryshua në: " + newRole + "\n");
+    if (wasFirstTime) {
+        socket.write(` Roli yt aktual: ${newRole}\n`);
+    } else {
+        socket.write("Roli u ndryshua në: " + newRole + "\n");
+    }
     return;
 }
 
 if (message.startsWith("/")) {
     const cmd = message.split(" ")[0];
+
+    if (!socket.role && cmd !== "/role" && cmd !== "/id") {
+        socket.write(" Duhet të vendosësh rolin tuaj fillimisht me /role <user|admin|super>\n");
+        return;
+    }
+
+    const superAllowed = ["/read", "/execute", "/write"];
+    if (socket.role === "super" && !superAllowed.includes(cmd)) {
+        socket.write("Komandë e ndaluar për super. Lejohen vetëm: /read, /execute, /write\n");
+        return;
+    }
 
     const superOnly = ["/execute", "/write"];
     if (superOnly.includes(cmd) && socket.role !== "super") {
@@ -173,7 +203,7 @@ if (message.startsWith("/upload")) {
 
     fs.writeFile(safe, buffer, (err) => {
         if (err) socket.write(" Gabim gjatë ruajtjes së file-it.\n");
-        else socket.write(`📥 File '${filename}' u ngarkua me sukses në server!\n`);
+        else socket.write(`File '${filename}' u ngarkua me sukses në server!\n`);
     });
 
     return;
@@ -209,7 +239,7 @@ if (message.startsWith("/delete")) {
 
     fs.unlink(safe, (err) => {
         if (err) socket.write("Gabim gjatë fshirjes së file-it.\n");
-        else socket.write(`🗑 File '${file}' u fshi me sukses!\n`);
+        else socket.write(`File '${file}' u fshi me sukses!\n`);
     });
     return;
 }
@@ -291,7 +321,7 @@ if (message.startsWith("/write")) {
 
     fs.writeFile(safe, content, (err) => {
         if (err) socket.write("Gabim gjatë shkrimit në file.\n");
-        else socket.write(`✍️ Përmbajtja u shkrua me sukses në '${filename}'!\n`);
+        else socket.write(`Përmbajtja u shkrua me sukses në '${filename}'!\n`);
     });
     return;
 }

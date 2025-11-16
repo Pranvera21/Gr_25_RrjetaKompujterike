@@ -5,7 +5,6 @@ const path = require('path');
 
 const crypto = require('crypto');
 
-// Krijo ose lexo clientID unik
 const clientIDPath = "clientID.txt";
 let clientID;
 
@@ -56,7 +55,7 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
         localPath = localPath.trim();
 
         if (!fs.existsSync(localPath)) {
-            console.log("❌ Gabim: File-i nuk ekziston!");
+            console.log("Gabim: File-i nuk ekziston!");
             return;
         }
 
@@ -64,7 +63,7 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
 
             serverFilename = serverFilename.trim();
             if (!serverFilename) {
-                console.log("❌ Duhet të japësh një emër file-i!");
+                console.log("Duhet të japësh një emër file-i!");
                 return;
             }
 
@@ -72,7 +71,7 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
             const base64 = fileData.toString("base64");
 
             client.write(`/upload ${serverFilename} ${base64}\n`);
-            console.log(`📤 File '${localPath}' po dërgohet te serveri si '${serverFilename}'...`);
+            console.log(`File '${localPath}' po dërgohet te serveri si '${serverFilename}'...`);
         });
     });
 }
@@ -109,12 +108,16 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
             const arg = parts[1];
 
             if (clientRole === "super") {
-                if (cmd === "/write") {
-                    const filename = parts[1];
-                    const content = parts.slice(2).join(" ");
-                    handleWrite(client, filename, content);
-                } else {
-                    client.write(input + '\n');
+                switch(cmd) {
+                    case "/read": handleRead(client, arg); break;
+                    case "/execute": client.write(input + '\n'); break;
+                    case "/write": 
+                        const filename = parts[1];
+                        const content = parts.slice(2).join(" ");
+                        handleWrite(client, filename, content);
+                        break;
+                    default: 
+                        console.log("Komandë e ndaluar për super. Lejohen vetëm: /read, /execute, /write");
                 }
             } else if (clientRole === "admin") {
                
@@ -132,10 +135,10 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
                   
     } else if (clientRole === "user") {
         switch(cmd) {
-            case "/list": handleList(client); break;
             case "/read": handleRead(client, arg); break;
-            default:  client.write(input + '\n');
-            // <--- Këtu është problemi: hello server nuk dërgohet tek serveri
+            case "/stats": client.write(input + '\n'); break;
+            default:  
+                console.log("Komandë e ndaluar për user. Lejohet vetëm: /read dhe /stats");
         }
     } else {
         console.log("Rol i panjohur. Përdor /role për ta ndryshuar.");
@@ -149,21 +152,30 @@ rlRole.question("Zgjidhni rolin tuaj (super/admin/user): ", (roleInput) => {
         });
     });
 
+    let dataBuffer = '';
     client.on('data', (data) => {
-        const message = data.toString();
-        if (message.startsWith("/file ")) {
-            const parts = message.split(" ");
+        dataBuffer += data.toString();
+        const messages = dataBuffer.split('\n');
+        dataBuffer = messages.pop() || '';
+        
+        messages.forEach(msg => {
+            msg = msg.trim();
+            if (!msg) return;
+            
+            if (msg.startsWith("/file ")) {
+            const parts = msg.split(" ");
             const filename = parts[1];
             const base64content = parts.slice(2).join(" ");
-            const content = Buffer.from(base64content, 'base64');
-            const outputPath = client.downloadPath
-        ? path.join(client.downloadPath, filename)
-        : filename;
-            fs.writeFileSync(outputPath, content);
-            console.log(`📥 File '${filename}' u shkarkua me sukses te ${outputPath}!`);
-            return;
-        }
-        console.log(" Mesazh nga serveri:", message);
+                const content = Buffer.from(base64content, 'base64');
+                const outputPath = client.downloadPath
+                    ? path.join(client.downloadPath, filename)
+                    : filename;
+                fs.writeFileSync(outputPath, content);
+                console.log(`📥 File '${filename}' u shkarkua me sukses te ${outputPath}!`);
+                return;
+            }
+            console.log(msg);
+        });
     });
 
     client.on('error', (err) => {
